@@ -1,0 +1,50 @@
+version: '2.1'
+
+services:
+   ngnx:
+     image: nginx:latest
+     restart: always
+     build:
+       context: ./nginx
+       dockerfile: Dockerfile
+     ports:
+       - ${IP_EXT}:80:80
+     depends_on:
+       - app
+
+   app:
+     image: express:latest
+     restart: always
+     build:
+       context: ./app
+       dockerfile: Dockerfile
+     environment:
+       DB_USER: ${DB_USER}
+       DB_NAME: ${DB_NAME}
+       DB_PASSWORD: ${DB_PASSWORD}
+     depends_on:
+       db:
+         condition: service_healthy
+
+   db:
+     image: mysql:5.7.8
+     restart: always
+     ports:
+       - ${IP_INT}:3306:3306 # change ip if required
+     volumes:
+     - ./mysql/conf:/docker-entrypoint-initdb.d
+     - ./mysql/data:/var/lib/mysql
+     environment:
+        MYSQL_DATABASE: ${DB_NAME}
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        DB_PASSWORD: ${DB_PASSWORD}
+     healthcheck:
+       test: "/usr/bin/mysql -u root -h db --password=${DB_PASSWORD} -e \"use test; select count(*) from users;\""
+       interval: 5s
+       timeout: 5s
+       retries: 5
+
+
+
+
+

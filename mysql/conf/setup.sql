@@ -1,0 +1,17 @@
+CREATE DATABASE IF NOT EXISTS test;
+
+ALTER DATABASE test
+DEFAULT CHARACTER SET utf8
+DEFAULT COLLATE utf8_general_ci;
+
+#GRANT ALL PRIVILEGES ON test.* TO $DB_USER@'localhost' IDENTIFIED BY $DB_PASSWORD;
+
+USE test;
+
+CREATE TABLE IF NOT EXISTS users (
+ id int(11) NOT NULL auto_increment,
+ name varchar(100) NOT NULL,
+ age int(3) NOT NULL,
+ email varchar(100) NOT NULL,
+ PRIMARY KEY (id)
+ );
