@@ -13,7 +13,7 @@ services:
        - app
 
    app:
-     image: express:latest
+     image: "app:${TAG}"
      restart: always
      build:
        context: ./app
