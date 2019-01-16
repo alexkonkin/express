@@ -2,18 +2,20 @@ version: '2.1'
 
 services:
    ngnx:
-     image: nginx:latest
+     image: alexkonkin/nginx:latest
      restart: always
      build:
        context: ./nginx
        dockerfile: Dockerfile
      ports:
        - ${IP_EXT}:80:80
+     environment:
+       IP_EXT: ${IP_EXT}
      depends_on:
        - app
 
    app:
-     image: "app:${TAG}"
+     image: "alexkonkin/app:${TAG}"
      restart: always
      build:
        context: ./app
