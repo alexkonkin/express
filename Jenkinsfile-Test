@@ -5,6 +5,14 @@ pipeline {
 
     agent { node { label 'master' }}
 
+    parameters {
+        string(
+            name: 'downstream_job_name',
+            defaultValue:"slave1",
+            description: "Please fill in the name of the Deploy job")
+    }
+
+
     stages {
         stage('Downloading project from Git'){
             steps {
@@ -102,7 +110,7 @@ pipeline {
                     def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
                     build(job: "Deploy", 
                         parameters: [
-                            string(name: 'name', value: 'slave1'),
+                            string(name: 'name', value: downstream_job_name),
                             string(name: 'tag', value: tag),
                             string(name: 'builder_ip', value: builder_ip)
                     ])
