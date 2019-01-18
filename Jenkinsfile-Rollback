@@ -1,0 +1,104 @@
+def versions;
+def current_version;
+
+pipeline {
+    environment {
+        USER_CREDENTIALS = credentials('dockerhub')
+     }
+
+    agent { node { label 'slave1' }}
+    
+    parameters {
+        string(
+            name: 'rollback_tag_id',
+            defaultValue: "0",
+            description: "Tag of the rollback release")
+    }
+    
+    stages{
+        stage('Downloading project from Git'){
+            steps {
+                git 'https://github.com/alexkonkin/express.git'
+            }//steps
+        }//stage
+
+        stage('Receiving information about tags from DockerHub'){
+            steps {
+                script{
+                    versions = sh(script: 'wget -q https://registry.hub.docker.com/v1/repositories/alexkonkin/app/tags -O -  | sed -e \'s/[][]//g\' -e \'s/"//g\' -e \'s/ //g\' | tr \'}\' \'\n\'  | awk -F: \'{print $3}\'', returnStdout: true).trim().split();
+                }
+            }//steps
+        }//stage
+
+        stage('Detecting a current version') {
+            steps{
+                script{
+                    current_version = sh(script: 'sudo docker ps|grep alexkonkin/app|awk \'{print $2}\'|awk -F: \'{print $2}\'' , returnStdout: true).trim();
+                    println "Current version is : "+current_version
+                    println "Available versions are : "+versions
+                    println "Rollback version is : "+rollback_tag_id
+                }
+            }//steps
+        }//stage
+       
+
+        stage('Performing Rollback if it is possible') {
+            steps{
+                script{
+                    if ((versions.contains(rollback_tag_id) == true) &&
+                        (rollback_tag_id.toInteger() < current_version.toInteger())){
+                        println 'Rollback operation is possible';
+
+
+                        sh '''
+                            ip=\$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print \$4}'|sed 's/\"//g')
+                            sed -i 's/ip_int_val/'\${ip}'/g' .env
+                            sed -i 's/ip_ext_val/'\${ip}'/g' .env
+                            sed -i 's/tag_val/'$current_version'/g' .env
+                        '''    
+        
+                        sh '''
+                            sudo docker-compose down
+                            for i in \$(sudo docker ps -aq); do sudo docker stop \$i; done
+                        
+                            sed -i 's/'$current_version'/'$rollback_tag_id'/g' .env
+                            sudo docker pull alexkonkin/app:$rollback_tag_id
+                            sudo docker-compose up -d
+                        '''    
+                        
+                    }else{
+                        println 'Rollback is not possible';
+                        println "Current version is : "+current_version
+                        println "Available versions are : "+versions
+                        println "Rollback version is : "+rollback_tag_id
+                        currentBuild.result = 'ABORTED'
+                    }
+                }
+            }//steps
+        }//stage   
+       
+        stage('Test'){
+            when {
+                expression {
+                    return currentBuild.result != 'ABORTED'|| currentBuild.result != 'FAILURE'
+                }
+            }
+            steps {
+                sh '''
+                        source ./.env
+                        curl $IP_EXT | grep Home;
+                   '''
+                
+                script {
+                    deployed_version=sh(script: 'sudo docker ps|grep alexkonkin/app|awk \'{print $2}\'|awk -F: \'{print $2}\'', returnStdout: true).trim();
+                    if(deployed_version.toInteger() == rollback_tag_id.toInteger()){
+                        currentBuild.result = 'SUCCESS'
+                    }else{
+                        currentBuild.result = 'FAILURE'
+                    }                
+                }
+            }//steps
+        }//stage
+    }//stages
+}//pipeline
+

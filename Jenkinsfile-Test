@@ -1,0 +1,114 @@
+pipeline {
+    environment {
+        USER_CREDENTIALS = credentials('dockerhub')
+    }
+
+    agent { node { label 'master' }}
+
+    stages {
+        stage('Downloading project from Git'){
+            steps {
+                git 'https://github.com/alexkonkin/express.git'
+            }//steps
+        }//stage git
+        
+        
+        stage('Build') {
+            steps{
+                sh '''
+                    rm -fv ./tmpfile
+                    ip=\$(cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print \$4}'|sed 's/\"//g')
+                    sed -i 's/localhost/'\${ip}'/g' ./nginx/nginx.conf
+                    sed -i 's/ip_int_val/'\${ip}'/g' .env
+                    sed -i 's/ip_ext_val/'\${ip}'/g' .env
+                    sed -i 's/tag_val/'$env.BUILD_ID'/g' .env
+                    echo 'ip='\${ip} >> ./tmpfile
+                '''
+
+                sh '''
+                    docker-compose down
+                '''    
+                
+                sh '''    
+                    docker images | grep "\\$alexkonkin/app*" || true
+                    if [ $? -eq 0 ];then
+                      docker images | grep alexkonkin/app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi alexkonkin/app:{}
+                    else
+                      echo "alexkonkin/app images are absent"
+                    fi
+                   '''   
+                
+                sh '''
+                    docker images | grep "\\$app*" || true
+                    if [ $? -eq 0 ];then
+                       docker images | grep app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi app:{}
+                    else
+                      echo "app images are absent"
+                    fi
+                   '''
+
+                sh '''
+                    docker-compose up -d
+                '''
+            }//steps
+        }//stage build
+
+        stage('Test'){
+            steps {
+                sh '''
+                      source ./tmpfile
+                      curl ${ip} | grep Home;
+                      if [ $? -eq 0 ]; then
+                           echo 'test_step=true' >> ./tmpfile
+                      else
+                           echo 'test_step=false' >> ./tmpfile
+                      fi       
+                   '''
+                script {
+                    def res = sh(script: 'cat ./tmpfile|grep test_step|awk -F= \'{print \$2}\'', returnStdout: true).trim();
+                    if (res == 'false'){
+                        currentBuild.result = 'FAILURE'                        
+                    }    
+                }   
+            }//steps
+        }//stage test
+
+        stage('Pushing to Docker Hub'){
+            when {
+                expression {
+                    return currentBuild.result != 'FAILURE'
+                }
+            }
+            steps{
+                sh '''
+                    source ./.env
+                    docker login -u ${USER_CREDENTIALS_USR} -p ${USER_CREDENTIALS_PSW}
+                    docker push alexkonkin/app:\${TAG}
+                    docker push alexkonkin/nginx:latest
+                '''
+            }//steps
+        }//stage push to docker
+
+        stage("Deployment in the downstream job") {
+            when {
+                expression {
+                    return currentBuild.result != 'FAILURE'
+                }
+            }
+            steps {
+                script {
+                    def tag = sh(script: 'cat ./.env|grep TAG|awk -F= \'{print \$2}\'', returnStdout: true).trim();
+                    def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
+                    build(job: "Deploy", 
+                        parameters: [
+                            string(name: 'name', value: 'slave1'),
+                            string(name: 'tag', value: tag),
+                            string(name: 'builder_ip', value: builder_ip)
+                    ])
+                }
+            }//steps
+        }//stage deployment
+    }//stages
+}//pipeline
+
+
