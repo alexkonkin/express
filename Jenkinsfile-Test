@@ -21,7 +21,7 @@ pipeline {
                     sed -i 's/localhost/'\${ip}'/g' ./nginx/nginx.conf
                     sed -i 's/ip_int_val/'\${ip}'/g' .env
                     sed -i 's/ip_ext_val/'\${ip}'/g' .env
-                    sed -i 's/tag_val/'$env.BUILD_ID'/g' .env
+                    sed -i 's/tag_val/'${BUILD_ID}'/g' .env
                     echo 'ip='\${ip} >> ./tmpfile
                 '''
 
