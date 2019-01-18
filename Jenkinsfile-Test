@@ -8,8 +8,12 @@ pipeline {
     parameters {
         string(
             name: 'downstream_job_name',
-            defaultValue:"slave1",
+            defaultValue:"deploy1",
             description: "Please fill in the name of the Deploy job")
+        string(
+            name: 'name',
+            defaultValue:"slave1",
+            description: "A name of the Jenkins slave builder host")    
     }
 
 
@@ -108,9 +112,9 @@ pipeline {
                 script {
                     def tag = sh(script: 'cat ./.env|grep TAG|awk -F= \'{print \$2}\'', returnStdout: true).trim();
                     def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
-                    build(job: "Deploy", 
+                    build(job: downstream_job_name, 
                         parameters: [
-                            string(name: 'name', value: downstream_job_name),
+                            string(name: 'name', value: name),
                             string(name: 'tag', value: tag),
                             string(name: 'builder_ip', value: builder_ip)
                     ])
