@@ -54,15 +54,15 @@ pipeline {
                             ip=\$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print \$4}'|sed 's/\"//g')
                             sed -i 's/ip_int_val/'\${ip}'/g' .env
                             sed -i 's/ip_ext_val/'\${ip}'/g' .env
-                            sed -i 's/tag_val/'$current_version'/g' .env
+                            sed -i 's/tag_val/'${current_version}'/g' .env
                         '''    
         
                         sh '''
                             sudo docker-compose down
                             for i in \$(sudo docker ps -aq); do sudo docker stop \$i; done
                         
-                            sed -i 's/'$current_version'/'$rollback_tag_id'/g' .env
-                            sudo docker pull alexkonkin/app:$rollback_tag_id
+                            sed -i 's/'$current_version'/'${rollback_tag_id}'/g' .env
+                            sudo docker pull alexkonkin/app:${rollback_tag_id}
                             sudo docker-compose up -d
                         '''    
                         
