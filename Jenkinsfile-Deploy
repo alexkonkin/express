@@ -18,13 +18,14 @@ pipeline {
     }
 
     stages{
+        /*
         stage('Downloading project from Git'){
             steps {
                 git 'https://github.com/alexkonkin/express.git'
                 
             }//steps
         }//stage
-
+        */
         stage('Setting up .env environment file') {
             steps{
                 sh '''

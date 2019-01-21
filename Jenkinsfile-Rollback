@@ -2,26 +2,17 @@ def versions;
 def current_version;
 
 pipeline {
-    environment {
-        USER_CREDENTIALS = credentials('dockerhub')
-     }
 
     agent { node { label 'slave1' }}
-    
+
     parameters {
         string(
             name: 'rollback_tag_id',
             defaultValue: "0",
             description: "Tag of the rollback release")
     }
-    
-    stages{
-        stage('Downloading project from Git'){
-            steps {
-                git 'https://github.com/alexkonkin/express.git'
-            }//steps
-        }//stage
 
+    stages{
         stage('Receiving information about tags from DockerHub'){
             steps {
                 script{
@@ -45,26 +36,19 @@ pipeline {
         stage('Performing Rollback if it is possible') {
             steps{
                 script{
-                    if ((versions.contains(rollback_tag_id) == true) &&
-                        (rollback_tag_id.toInteger() < current_version.toInteger())){
+                    if ((versions.contains(rollback_tag_id) == true) && (rollback_tag_id.toInteger() < current_version.toInteger())){
                         println 'Rollback operation is possible';
 
+                        sh "ip=\$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print \$4}'|sed 's/\"//g') &&\
+                            sed -i 's/ip_int_val/'\${ip}'/g' .env &&\
+                            sed -i 's/ip_ext_val/'\${ip}'/g' .env &&\
+                            sed -i 's/tag_val/'${current_version}'/g' .env"
 
-                        sh '''
-                            ip=\$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print \$4}'|sed 's/\"//g')
-                            sed -i 's/ip_int_val/'\${ip}'/g' .env
-                            sed -i 's/ip_ext_val/'\${ip}'/g' .env
-                            sed -i 's/tag_val/'$current_version'/g' .env
-                        '''    
-        
-                        sh '''
-                            sudo docker-compose down
-                            for i in \$(sudo docker ps -aq); do sudo docker stop \$i; done
-                        
-                            sed -i 's/'$current_version'/'$rollback_tag_id'/g' .env
-                            sudo docker pull alexkonkin/app:$rollback_tag_id
-                            sudo docker-compose up -d
-                        '''    
+                        sh  "sudo docker-compose down &&\
+                            for i in \$(sudo docker ps -aq); do sudo docker stop \$i; done &&\
+                            sed -i 's/'${current_version}'/'\${rollback_tag_id}'/g' .env &&\
+                            sudo docker pull alexkonkin/app:\${rollback_tag_id} &&\
+                            sudo docker-compose up -d"
                         
                     }else{
                         println 'Rollback is not possible';
@@ -75,14 +59,15 @@ pipeline {
                     }
                 }
             }//steps
-        }//stage   
-       
+        }//stage
+
         stage('Test'){
             when {
                 expression {
                     return currentBuild.result != 'ABORTED'|| currentBuild.result != 'FAILURE'
                 }
             }
+            
             steps {
                 sh '''
                         source ./.env
@@ -99,6 +84,7 @@ pipeline {
                 }
             }//steps
         }//stage
+        
     }//stages
 }//pipeline
 
