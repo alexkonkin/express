@@ -1,4 +1,7 @@
+SHELL := /bin/bash
 IP := $(shell cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print $$4}'|sed 's/"//g')
+versions := ''
+current_version := ''
 
 .PHONY: build login logout test push deploy test-deploy
 
@@ -27,18 +30,26 @@ build:
 
 deploy:
 	${STAGE} "Deploy"
-	@ echo ${tag}
-	@ echo ${tag}
-	@ echo ${builder_ip}
+	@ echo 'The application tag to be deployed is : ' ${tag}
+	@ echo 'The IP address of the application is :  ' ${builder_ip}
+	@ make dep_env
+	@ make dep_shutdown
+	@ make dep_clean
+	@ make dep_pull
+	@ make dep_start
+
+dep_env:
 	${INFO} "Environment file setup to download a desired image from DeockerHub"
 	@ sed -i 's/ip_int_val/'${builder_ip}'/g' .env
 	@ sed -i 's/ip_ext_val/'${builder_ip}'/g' .env
 	@ sed -i 's/tag_val/'${tag}'/g' .env
-	
+
+dep_shutdown:
 	${INFO} "Shutting down existing solution"
 	@ sudo docker-compose down
 	@ sudo docker stop $$(sudo docker ps -aq)
 
+dep_clean:
 	${INFO} "Clearing environment from unused images"
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \
@@ -50,13 +61,23 @@ deploy:
 	then docker images | grep app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force app:{};                       \
 	else echo "app images are absent";                                                                                         \
 	fi
-	
+
+dep_pull:
 	${INFO} "Downloading images from DockerHub"
 	@ sudo docker pull alexkonkin/app:${tag}
 	@ sudo docker pull alexkonkin/nginx:latest
-	
+
+dep_start:
 	${INFO} "Starting solution"
 	@ sudo docker-compose up -d
+
+rollback:
+	versions=($$( wget -q https://registry.hub.docker.com/v1/repositories/alexkonkin/app/tags -O -  | sed -e 's/[][]//g' -e 's/\"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $$3}'));\
+	current_version=$$(docker ps|grep alexkonkin/app|awk '{print $$2}'|awk -F: '{print $$2}');\
+	echo "Current version is : "$$current_version;\
+	echo "Rollback tag id is : "$$rollback_tag_id;\
+	if [[ " $${versions[@]} " =~ " $${current_version} " && $${rollback_tag_id} -lt $${current_version} ]]; then echo OK;else echo NOK;fi
+
 
 test:
 	${STAGE} "Test"
