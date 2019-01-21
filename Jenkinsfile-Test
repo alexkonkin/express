@@ -18,13 +18,6 @@ pipeline {
 
 
     stages {
-        stage('Downloading project from Git'){
-            steps {
-                git 'https://github.com/alexkonkin/express.git'
-            }//steps
-        }//stage git
-        
-        
         stage('Build') {
             steps{
                 sh '''
