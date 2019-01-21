@@ -2,26 +2,17 @@ def versions;
 def current_version;
 
 pipeline {
-    environment {
-        USER_CREDENTIALS = credentials('dockerhub')
-     }
 
     agent { node { label 'slave1' }}
-    
+
     parameters {
         string(
             name: 'rollback_tag_id',
-            defaultValue: "217",
+            defaultValue: "0",
             description: "Tag of the rollback release")
     }
-    
-    stages{
-        stage('Downloading project from Git'){
-            steps {
-                git 'https://github.com/alexkonkin/express.git'
-            }//steps
-        }//stage
 
+    stages{
         stage('Receiving information about tags from DockerHub'){
             steps {
                 script{
