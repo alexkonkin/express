@@ -1,6 +1,9 @@
 SHELL := /bin/bash
 
-.PHONY: build login logout test push deploy dep_test rb_test
+.PHONY: build bld_conf bld_clean bld_run bld_test bld_push \
+	deploy dep_env dep_shutdown dep_clean dep_pull dep_start dep_test \
+	rollback rb_cond rb_run rb_test \
+	help
 
 build:
 	${STAGE} "Build"
@@ -9,6 +12,23 @@ build:
 	@ make bld_run
 	@ make bld_test
 	@ make bld_push
+
+deploy:
+	${STAGE} "Deploy"
+	@ echo 'The application tag to be deployed is : ' ${tag}
+	@ echo 'The IP address of the application is :  ' ${builder_ip}
+	@ make dep_env
+	@ make dep_shutdown
+	@ make dep_clean
+	@ make dep_pull
+	@ make dep_start
+	@ make dep_test
+
+rollback:
+	${INFO} "Starting rollback operation"
+	@ make rb_cond
+	@ make rb_run
+	@ make rb_test
 
 bld_conf:
 	${INFO} "Preparing configuration file"
@@ -39,17 +59,6 @@ bld_clean:
 bld_run:
 	${INFO} "Starting the application containers"
 	@sudo docker-compose up -d
-
-deploy:
-	${STAGE} "Deploy"
-	@ echo 'The application tag to be deployed is : ' ${tag}
-	@ echo 'The IP address of the application is :  ' ${builder_ip}
-	@ make dep_env
-	@ make dep_shutdown
-	@ make dep_clean
-	@ make dep_pull
-	@ make dep_start
-	@ make dep_test
 
 dep_env:
 	${INFO} "Environment file setup to download a desired image from DeockerHub"
@@ -86,12 +95,6 @@ dep_pull:
 dep_start:
 	${INFO} "Starting solution"
 	@ sudo docker-compose up -d
-
-rollback:
-	${INFO} "Starting rollback operation"
-	@ make rb_cond
-	@ make rb_run
-	@ make rb_test
 
 rb_cond:
 	${INFO} "Getting information about the current version and the tags available in docker registry"
@@ -193,10 +196,15 @@ logout:
 	fi
 
 help:
+	@ echo
 	@ echo 'build - build the solution, to run please execute export BUILD_ID=<id> && make build'
+	@ echo
 	@ echo 'deploy - deploy the soulution , to run please execute export tag=<tag> && export builder_ip=<ip> && make deploy'
+	@ echo
 	@ echo 'rollback - rollback the solution, to run please execute export rollback_tag_id=<ip> && make rollback'
+	@ echo
 	@ echo 'rb_get_tags - the targed gets all tags from the docker registry, to run execute make rb_get_tags'
+	@ echo
 
 # Cosmetics
 YELLOW := "\e[1;33m"
