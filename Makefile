@@ -4,14 +4,25 @@ SHELL := /bin/bash
 
 build:
 	${STAGE} "Build"
+	@ make bld_conf
+	@ make bld_clean
+	@ make bld_run
+	@ make bld_test
+	@ make bld_push
+
+bld_conf:
+	${INFO} "Preparing configuration file"
 	@ rm -fv ./tmpfile;                                                                            \
 	git checkout .env;                                                                             \
 	ip=$$(cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
 	sed -i 's/localhost/'$$ip'/g' ./nginx/nginx.conf;                                              \
-	sed -i 's/ip_int_val/'$$ip'/g' .env                                                            \
-	sed -i 's/ip_ext_val/'$$ip'/g' .env                                                            \
-	sed -i 's/tag_val/'${BUILD_ID}'/g' .env                                                        \
-	echo 'ip='$(IP) >> ./tmpfile
+	sed -i 's/ip_int_val/'$$ip'/g' .env;                                                           \
+	sed -i 's/ip_ext_val/'$$ip'/g' .env;                                                           \
+	sed -i 's/tag_val/'${BUILD_ID}'/g' .env;                                                       \
+	echo 'ip='$$ip >> ./tmpfile
+
+bld_clean:
+	${INFO} "Deleting old images and containers"
 	@sudo docker-compose down
 	@sudo docker stop $$(sudo docker ps -aq)
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
@@ -24,8 +35,10 @@ build:
 	then docker images | grep app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force app:{};                       \
 	else echo "app images are absent";                                                                                         \
 	fi
+
+bld_run:
+	${INFO} "Starting the application containers"
 	@sudo docker-compose up -d
-	${INFO} "Build complete"
 
 deploy:
 	${STAGE} "Deploy"
@@ -119,7 +132,7 @@ rb_run:
 	sudo docker-compose up -d;                                                                     \
 	fi
 
-test:
+bld_test:
 	${STAGE} "Test"
 	@ . ./tmpfile &&                                  \
 	curl $$ip | grep Home &&                          \
@@ -153,19 +166,22 @@ rb_test:
 	else exit 1;                                                                                                 \
 	fi
 
-push: login
+bld_push: login
 	${STAGE} "Pushing images to DockerHub"
-	@ . ./.env && \
-	docker push alexkonkin/app:$$TAG && \
-	docker push alexkonkin/nginx:latest
+	@ . ./.env;                                   \
+	. ./tmpfile;                                  \
+	if [ $$test_step == true ];                   \
+	then docker push alexkonkin/app:$$TAG;        \
+	docker push alexkonkin/nginx:latest;          \
+	fi
 	@ make logout
 
 login:
 	${INFO} "Logging in to Docker registry ..."
-	@ docker login -u ${DOCKER_CREDENTIALS_USR} -p ${DOCKER_CREDENTIALS_PSW} 2>/dev/null 1>/dev/null && \
-	if [  $$? -eq 0 ];                                                                                  \
-	then echo 'Logged in to Docker registry'; exit 0;                                                   \
-	else echo 'Error during login to Docker registry'; exit 1;                                          \
+	@ docker login -u ${DOCKER_CREDENTIALS_USR} -p ${DOCKER_CREDENTIALS_PSW} 2>/dev/null; \
+	if [  $$? -eq 0 ];                                                                    \
+	then echo 'Logged in to Docker registry'; exit 0;                                     \
+	else echo 'Error during login to Docker registry'; exit 1;                            \
 	fi
 
 logout:
@@ -177,7 +193,7 @@ logout:
 	fi
 
 help:
-	@ echo 'build - build the solution, to run please execute make build'
+	@ echo 'build - build the solution, to run please execute export BUILD_ID=<id> && make build'
 	@ echo 'deploy - deploy the soulution , to run please execute export tag=<tag> && export builder_ip=<ip> && make deploy'
 	@ echo 'rollback - rollback the solution, to run please execute export rollback_tag_id=<ip> && make rollback'
 	@ echo 'rb_get_tags - the targed gets all tags from the docker registry, to run execute make rb_get_tags'
