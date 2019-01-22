@@ -1,20 +1,19 @@
 SHELL := /bin/bash
-IP := $(shell cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print $$4}'|sed 's/"//g')
-versions := ''
-current_version := ''
 
 .PHONY: build login logout test push deploy dep_test rb_test
 
 build:
 	${STAGE} "Build"
-	@ rm -fv ./tmpfile
-	@ sed -i 's/localhost/'\$(IP)'/g' ./nginx/nginx.conf
-	@ sed -i 's/ip_int_val/'\$(IP)'/g' .env
-	@ sed -i 's/ip_ext_val/'\$(IP)'/g' .env
-	@ sed -i 's/tag_val/'${BUILD_ID}'/g' .env
-	@ echo 'ip='$(IP) >> ./tmpfile
-	@ sudo docker-compose down
-	@ sudo docker stop $$(sudo docker ps -aq)
+	@ rm -fv ./tmpfile;                                                                            \
+	git checkout .env;                                                                             \
+	ip=$$(cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
+	sed -i 's/localhost/'$$ip'/g' ./nginx/nginx.conf;                                              \
+	sed -i 's/ip_int_val/'$$ip'/g' .env                                                            \
+	sed -i 's/ip_ext_val/'$$ip'/g' .env                                                            \
+	sed -i 's/tag_val/'${BUILD_ID}'/g' .env                                                        \
+	echo 'ip='$(IP) >> ./tmpfile
+	@sudo docker-compose down
+	@sudo docker stop $$(sudo docker ps -aq)
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \
 	then docker images | grep alexkonkin/app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force alexkonkin/app:{}; \
