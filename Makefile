@@ -130,7 +130,7 @@ rb_run:
 	for i in $$(sudo docker ps -aq);                                                               \
 	do sudo docker stop $$i;                                                                       \
 	done;                                                                                          \
-	sed -i 's/'$$current_version'/'${rollback_tag_id}'/g' .env;                                    \
+	sed -i 's/='$$current_version'/='${rollback_tag_id}'/g' .env;                                  \
 	sudo docker pull alexkonkin/app:${rollback_tag_id};                                            \
 	sudo docker-compose up -d;                                                                     \
 	fi
