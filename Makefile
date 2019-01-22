@@ -72,12 +72,45 @@ dep_start:
 	@ sudo docker-compose up -d
 
 rollback:
-	versions=($$( wget -q https://registry.hub.docker.com/v1/repositories/alexkonkin/app/tags -O -  | sed -e 's/[][]//g' -e 's/\"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $$3}'));\
-	current_version=$$(docker ps|grep alexkonkin/app|awk '{print $$2}'|awk -F: '{print $$2}');\
-	echo "Current version is : "$$current_version;\
-	echo "Rollback tag id is : "$$rollback_tag_id;\
-	if [[ " $${versions[@]} " =~ " $${current_version} " && $${rollback_tag_id} -lt $${current_version} ]]; then echo OK;else echo NOK;fi
+	${INFO} "Starting rollback operation"
 
+rb_cond:
+	${INFO} "Getting information about the current version and the tags available in docker registry"
+	versions=($$( wget -q https://registry.hub.docker.com/v1/repositories/alexkonkin/app/tags -O -  | sed -e 's/[][]//g' -e 's/\"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $$3}'));\
+	current_version=$$(docker ps|grep alexkonkin/app|awk '{print $$2}'|awk -F: '{print $$2}');                                                                                             \
+	echo "Current version is : "$$current_version;                                                                                                                                         \
+	echo "Rollback tag id is : "$$rollback_tag_id;                                                                                                                                         \
+	rm -fv ./tmpfile;                                                                                                                                                                      \
+	if [[ $${versions[@]} =~ $${current_version} && $${rollback_tag_id} -lt $${current_version} ]];                                                                                        \
+	then echo 'rb_cond=true' >> ./tmpfile;                                                                                                                                                 \
+	echo 'current_version='$$current_version >> ./tmpfile;                                                                                                                                 \
+	echo 'Rollback is possible';                                                                                                                                                           \
+	else echo 'rb_cond=false' >> ./tmpfile;echo 'Rollback is not possible';                                                                                                                \
+	fi
+
+rb_get_tags:
+	${INFO} "Information about the tags available in Docker registry"
+	versions=($$( wget -q https://registry.hub.docker.com/v1/repositories/alexkonkin/app/tags -O -  | sed -e 's/[][]//g' -e 's/\"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $$3}'));\
+	echo $${versions[*]}
+
+rb_run:
+	${INFO} "Starting rollback"
+	@ . ./tmpfile; \
+	if [ $$rb_cond == true ];\
+	then echo 'Rollback has been started';\
+	ip=$$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
+	sed -i 's/ip_int_val/'$$ip'/g' .env; \
+	sed -i 's/ip_ext_val/'$$ip'/g' .env; \
+	sed -i 's/tag_val/'$$current_version'/g' .env; \
+	echo 'Stopping the version with the tag '$$current_version;\
+	sudo docker-compose down;\
+	for i in $$(sudo docker ps -aq); \
+	do sudo docker stop $$i; \
+	done;\
+	sed -i 's/'$$current_version'/'${rollback_tag_id}'/g' .env;\
+	sudo docker pull alexkonkin/app:${rollback_tag_id};\
+	sudo docker-compose up -d;\
+	fi
 
 test:
 	${STAGE} "Test"
