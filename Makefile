@@ -3,7 +3,7 @@ IP := $(shell cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print
 versions := ''
 current_version := ''
 
-.PHONY: build login logout test push deploy test-deploy
+.PHONY: build login logout test push deploy dep_test rb_test
 
 build:
 	${STAGE} "Build"
@@ -37,9 +37,11 @@ deploy:
 	@ make dep_clean
 	@ make dep_pull
 	@ make dep_start
+	@ make dep_test
 
 dep_env:
 	${INFO} "Environment file setup to download a desired image from DeockerHub"
+	@ git checkout .env
 	@ sed -i 's/ip_int_val/'${builder_ip}'/g' .env
 	@ sed -i 's/ip_ext_val/'${builder_ip}'/g' .env
 	@ sed -i 's/tag_val/'${tag}'/g' .env
@@ -47,7 +49,6 @@ dep_env:
 dep_shutdown:
 	${INFO} "Shutting down existing solution"
 	@ sudo docker-compose down
-	@ sudo docker stop $$(sudo docker ps -aq)
 
 dep_clean:
 	${INFO} "Clearing environment from unused images"
@@ -61,6 +62,9 @@ dep_clean:
 	then docker images | grep app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force app:{};                       \
 	else echo "app images are absent";                                                                                         \
 	fi
+	@ if [ $$(docker ps -aq | wc -l) -gt 0 ];                                                                                  \
+	then sudo docker rm $$(sudo docker ps -aq);                                                                                \
+	fi
 
 dep_pull:
 	${INFO} "Downloading images from DockerHub"
@@ -73,6 +77,9 @@ dep_start:
 
 rollback:
 	${INFO} "Starting rollback operation"
+	@ make rb_cond
+	@ make rb_run
+	@ make rb_test
 
 rb_cond:
 	${INFO} "Getting information about the current version and the tags available in docker registry"
@@ -95,21 +102,22 @@ rb_get_tags:
 
 rb_run:
 	${INFO} "Starting rollback"
-	@ . ./tmpfile; \
-	if [ $$rb_cond == true ];\
-	then echo 'Rollback has been started';\
+	@ git checkout .env
+	@ . ./tmpfile;                                                                                 \
+	if [ $$rb_cond == true ];                                                                      \
+	then echo 'Rollback has been started';                                                         \
 	ip=$$(cat /vagrant/Vagrantfile |grep js|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
-	sed -i 's/ip_int_val/'$$ip'/g' .env; \
-	sed -i 's/ip_ext_val/'$$ip'/g' .env; \
-	sed -i 's/tag_val/'$$current_version'/g' .env; \
-	echo 'Stopping the version with the tag '$$current_version;\
-	sudo docker-compose down;\
-	for i in $$(sudo docker ps -aq); \
-	do sudo docker stop $$i; \
-	done;\
-	sed -i 's/'$$current_version'/'${rollback_tag_id}'/g' .env;\
-	sudo docker pull alexkonkin/app:${rollback_tag_id};\
-	sudo docker-compose up -d;\
+	sed -i 's/ip_int_val/'$$ip'/g' .env;                                                           \
+	sed -i 's/ip_ext_val/'$$ip'/g' .env;                                                           \
+	sed -i 's/tag_val/'$$current_version'/g' .env;                                                 \
+	echo 'Stopping the version with the tag '$$current_version;                                    \
+	sudo docker-compose down;                                                                      \
+	for i in $$(sudo docker ps -aq);                                                               \
+	do sudo docker stop $$i;                                                                       \
+	done;                                                                                          \
+	sed -i 's/'$$current_version'/'${rollback_tag_id}'/g' .env;                                    \
+	sudo docker pull alexkonkin/app:${rollback_tag_id};                                            \
+	sudo docker-compose up -d;                                                                     \
 	fi
 
 test:
@@ -122,13 +130,28 @@ test:
 	else echo 'test_step=false' >> ./tmpfile; exit 1; \
 	fi
 
-test-deploy:
+dep_test:
 	${STAGE} "Post deployment test"
 	@ echo ${builder_ip}
 	@ curl ${builder_ip} | grep Home &&               \
 	if [ $$? -eq 0 ];                                 \
 	then exit 0;                                      \
 	else exit 1;                                      \
+	fi
+
+rb_test:
+	${STAGE} "Post rollback tests"
+	${INFO} "Availability of the page"
+	@ source ./.env;                                                                                             \
+	curl $$IP_EXT | grep Home;
+	${INFO} "Comparison of deployed version with the tag passed to rollback operation"
+	@ deployed_version=$$(sudo docker ps|grep alexkonkin/app|awk '{print $$2}'|awk -F: '{print $$2}');           \
+	if [ $$deployed_version == ${rollback_tag_id} ];                                                             \
+	then echo 'The version that has been deployed is equal to the version that was passed to rollback operation';\
+	echo 'Deployed versioin is '$$deployed_version;                                                              \
+	echo 'The version passed to rollback operation is '${rollback_tag_id};                                       \
+	exit 0;                                                                                                      \
+	else exit 1;                                                                                                 \
 	fi
 
 push: login
@@ -154,7 +177,12 @@ logout:
 	else echo 'Error during login to Docker registry'; exit 1;                  \
 	fi
 
-	
+help:
+	@ echo 'build - build the solution, to run please execute make build'
+	@ echo 'deploy - deploy the soulution , to run please execute export tag=<tag> && export builder_ip=<ip> && make deploy'
+	@ echo 'rollback - rollback the solution, to run please execute export rollback_tag_id=<ip> && make rollback'
+	@ echo 'rb_get_tags - the targed gets all tags from the docker registry, to run execute make rb_get_tags'
+
 # Cosmetics
 YELLOW := "\e[1;33m"
 NC := "\e[0m"
