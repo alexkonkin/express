@@ -10,6 +10,10 @@ pipeline {
             name: 'downstream_job_name',
             defaultValue:"Deploy-jenkinsfile-make",
             description: "the name of the downstream job that should deploy the solution")
+        string(
+            name: 'builder_node_name',
+            defaultValue:"slave1",
+            description: "the name of the node that should run the Deploy job")    
     }
 
     stages {
@@ -51,7 +55,7 @@ pipeline {
                     def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
                     build(job: "downstream_job_name", 
                         parameters: [
-                            string(name: 'name', value: 'slave1'),
+                            string(name: 'name', value: builder_node_name),
                             string(name: 'tag', value: tag),
                             string(name: 'builder_ip', value: builder_ip)
                     ])
