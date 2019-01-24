@@ -16,7 +16,9 @@ pipeline {
                 defaultValue:"192.168.1.3",
                 description: "IP address that should be used in the nginx container")    
         }
-
+ 
+    stages {
+    
         stage('Deploy: setup environment') {
             steps{
                 sh "make dep_env"
