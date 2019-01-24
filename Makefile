@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .PHONY: build bld_conf bld_clean bld_run bld_test bld_push \
-	deploy dep_env dep_shutdown dep_clean dep_pull dep_start dep_test \
+	deploy dep_env dep_shutdown dep_clean dep_pull dep_run dep_test \
 	rollback rb_cond rb_run rb_test \
 	help
 
@@ -21,7 +21,7 @@ deploy:
 	@ make dep_shutdown
 	@ make dep_clean
 	@ make dep_pull
-	@ make dep_start
+	@ make dep_run
 	@ make dep_test
 
 rollback:
@@ -92,7 +92,7 @@ dep_pull:
 	@ sudo docker pull alexkonkin/app:${tag}
 	@ sudo docker pull alexkonkin/nginx:latest
 
-dep_start:
+dep_run:
 	${INFO} "Starting solution"
 	@ sudo docker-compose up -d
 
