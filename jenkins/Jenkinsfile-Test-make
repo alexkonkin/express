@@ -53,7 +53,7 @@ pipeline {
                 script {
                     def tag = sh(script: 'cat ./.env|grep TAG|awk -F= \'{print \$2}\'', returnStdout: true).trim();
                     def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
-                    build(job: "downstream_job_name", 
+                    build(job: downstream_job_name, 
                         parameters: [
                             string(name: 'name', value: builder_node_name),
                             string(name: 'tag', value: tag),
