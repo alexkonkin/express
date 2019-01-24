@@ -181,7 +181,7 @@ bld_push: login
 
 login:
 	${INFO} "Logging in to Docker registry ..."
-	@ docker login -u ${DOCKER_CREDENTIALS_USR} -p ${DOCKER_CREDENTIALS_PSW} 2>/dev/null; \
+	@ docker login -u ${USER_CREDENTIALS_USR} -p ${USER_CREDENTIALS_PSW} 2>/dev/null; \
 	if [  $$? -eq 0 ];                                                                    \
 	then echo 'Logged in to Docker registry'; exit 0;                                     \
 	else echo 'Error during login to Docker registry'; exit 1;                            \
