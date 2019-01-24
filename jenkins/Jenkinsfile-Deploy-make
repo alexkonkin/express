@@ -1,0 +1,59 @@
+pipeline {
+
+        agent { node { label name }}
+
+        parameters {
+            string(
+                name: 'name',
+                defaultValue:"slave1",
+                description: "the name of a node that should build this job")
+            string(
+                name: 'tag',
+                defaultValue:"217",
+                description: "tag that should be used for this job")
+            string(
+                name: 'builder_ip',
+                defaultValue:"192.168.1.3",
+                description: "IP address that should be used in the nginx container")    
+        }
+ 
+    stages {
+    
+        stage('Deploy: setup environment') {
+            steps{
+                sh "make dep_env"
+            }
+        }
+
+        stage('Deploy: shutdown previous deployment') {
+            steps{
+                sh "make dep_env"
+            }
+        }
+
+        stage('Deploy: delete unused images') {
+            steps{
+                sh "make dep_shutdown"
+                sh "make dep_clean"
+            }
+        }
+        
+        stage('Deploy: downloading images') {
+            steps{
+                sh "make dep_pull"
+            }
+        }
+
+        stage('Deploy: starting deployment') {
+            steps{
+                sh "make dep_run"
+            }
+        }
+        
+        stage('Deploy: testing solution') {
+            steps{
+                sh "make dep_test"
+            }
+        }
+    }
+}

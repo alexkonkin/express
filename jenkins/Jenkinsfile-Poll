@@ -1,0 +1,24 @@
+pipeline {
+    agent { node { label 'master' }}
+
+    triggers {
+        pollSCM '*/1 * * * *'
+    }
+
+    stages{
+        stage('Poll SCM of the NodeJS-MySQL-Express project') {
+            steps{
+                checkout changelog: true, poll: true, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'nodejs-mysql-crud']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/alexkonkin/nodejs-mysql-crud.git']]]
+             }        
+        }
+        
+        stage("Deployment in the downstream job") {
+            steps {
+                script {
+                        build(job: "Test")
+                }
+            }
+        }
+    }
+}
+

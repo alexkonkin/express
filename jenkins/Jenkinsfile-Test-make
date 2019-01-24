@@ -1,0 +1,56 @@
+pipeline {
+    environment {
+        USER_CREDENTIALS = credentials('dockerhub')
+    }
+
+    agent { node { label 'master' }}
+
+    stages {
+
+        stage('Build: preparing configuration') {
+            steps{
+                sh "make bld_conf"
+            }
+        }
+
+        stage('Build: cleaning unused images') {
+            steps{                
+                sh "make bld_clean"    
+            }
+        }
+
+        stage('Build: building solution') {
+            steps{        
+                sh "make bld_run"   
+            }
+        }
+
+        stage('Build: executing tests') {
+            steps{        
+                sh "make bld_test"
+            }
+        }
+
+        stage('Build: pushing images to DockerHub') {
+            steps{
+                sh "make bld_push"
+            }
+        }
+
+        stage("Deployment in the downstream job") {
+            steps {
+                script {
+                    def tag = sh(script: 'cat ./.env|grep TAG|awk -F= \'{print \$2}\'', returnStdout: true).trim();
+                    def builder_ip = sh(script: 'cat /vagrant/Vagrantfile |grep js|grep private_network|awk \'{print \$4}\'|sed \'s/\"//g\'' , returnStdout: true).trim();
+                    build(job: "deploy1", 
+                        parameters: [
+                            string(name: 'name', value: 'slave1'),
+                            string(name: 'tag', value: tag),
+                            string(name: 'builder_ip', value: builder_ip)
+                    ])
+                }
+            }
+        }
+    }
+}
+
