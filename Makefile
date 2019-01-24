@@ -84,7 +84,7 @@ dep_clean:
 	else echo "app images are absent";                                                                                         \
 	fi
 	@ if [ $$(docker ps -aq | wc -l) -gt 0 ];                                                                                  \
-	then sudo docker rm $$(sudo docker ps -aq);                                                                                \
+	then sudo docker rm --force $$(sudo docker ps -aq);                                                                                \
 	fi
 
 dep_pull:
