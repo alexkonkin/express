@@ -43,8 +43,8 @@ bld_conf:
 
 bld_clean:
 	${INFO} "Deleting old images and containers"
-	sudo docker-compose down || true;                                                                                     \
-	sudo docker stop $$(sudo docker ps -aq); || true; 
+	@ sudo docker-compose down || true;                                                                                     \
+	@ sudo docker stop $$(sudo docker ps -aq) || true; 
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \                                                                                                       \
 	then docker images | grep alexkonkin/app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force alexkonkin/app:{};      \
