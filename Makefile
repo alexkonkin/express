@@ -45,8 +45,8 @@ bld_clean:
 	${INFO} "Deleting old images and containers"
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \
-	@sudo docker-compose down || true
-	@sudo docker stop $$(sudo docker ps -aq)
+	@sudo docker-compose down || true                                                                                          \
+	@sudo docker stop $$(sudo docker ps -aq)                                                                                   \
 	then docker images | grep alexkonkin/app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force alexkonkin/app:{}; \
 	else echo "alexkonkin/app images are absent";                                                                              \
 	fi
