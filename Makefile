@@ -46,7 +46,7 @@ bld_clean:
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \                                                                                                       \
 	then sudo docker-compose down || true;                                                                                     \
-	sudo docker stop $$(sudo docker ps -aq)                                                                                    \
+	sudo docker stop $$(sudo docker ps -aq);                                                                                    \
 	docker images | grep alexkonkin/app | tr -s ' ' | cut -d ' ' -f 2 | xargs -I {} docker rmi --force alexkonkin/app:{};      \
 	else echo "alexkonkin/app images are absent";                                                                              \
 	fi
