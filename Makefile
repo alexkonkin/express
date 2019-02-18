@@ -43,7 +43,7 @@ bld_conf:
 
 bld_clean:
 	${INFO} "Deleting old images and containers"
-	@sudo docker-compose down
+	@sudo docker-compose down | true
 	@sudo docker stop $$(sudo docker ps -aq)
 	@ docker images | grep "\\$$alexkonkin/app*" || true;                                                                      \
 	if [ $$? -eq 0 ];                                                                                                          \
