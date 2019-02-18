@@ -34,7 +34,7 @@ bld_conf:
 	${INFO} "Preparing configuration file"
 	@ rm -fv ./tmpfile;                                                                            \
 	git checkout .env;                                                                             \
-	ip=$$(cat /vagrant/Vagrantfile |grep jm|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
+	ip=$$(cat /vagrant/Vagrantfile |grep jm1|grep private_network|awk '{print $$4}'|sed 's/\"//g'); \
 	sed -i 's/localhost/'$$ip'/g' ./nginx/nginx.conf;                                              \
 	sed -i 's/ip_int_val/'$$ip'/g' .env;                                                           \
 	sed -i 's/ip_ext_val/'$$ip'/g' .env;                                                           \
