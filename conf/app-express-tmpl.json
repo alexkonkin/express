@@ -1,0 +1,50 @@
+{
+
+        "memory": "128", 
+        "networkMode": "bridge", 
+        "family": "app-express-external-repo", 
+        "placementConstraints": [], 
+        "executionRoleArn": "arn:aws:iam::702990705182:role/ecsTaskExecutionRole", 
+        "volumes": [], 
+        "requiresCompatibilities": [
+            "EC2"
+        ], 
+        "taskRoleArn": "arn:aws:iam::702990705182:role/ecsTaskExecutionRole", 
+        "containerDefinitions": [
+            {
+                "dnsSearchDomains": [
+                    "local"
+                ], 
+                "environment": [
+                    {
+                        "name": "DB_NAME", 
+                        "value": "test"
+                    }, 
+                    {
+                        "name": "DB_USER", 
+                        "value": "root"
+                    }, 
+                    {
+                        "name": "DB_PASSWORD", 
+                        "value": "test"
+                    }
+                ], 
+                "name": "app-external", 
+                "mountPoints": [], 
+                "image": "alexkonkin/app:TAG", 
+                "hostname": "app", 
+                "cpu": 0, 
+                "portMappings": [
+                    {
+                        "protocol": "tcp", 
+                        "containerPort": 3000, 
+                        "hostPort": 0
+                    }
+                ], 
+                "memory": 128, 
+                "essential": true, 
+                "volumesFrom": []
+            }
+        ] 
+    
+}
