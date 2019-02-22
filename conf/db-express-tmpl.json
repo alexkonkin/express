@@ -1,0 +1,78 @@
+{
+        "memory": "512", 
+        "networkMode": "awsvpc", 
+        "family": "db", 
+        "placementConstraints": [], 
+        "cpu": "256", 
+        "executionRoleArn": "arn:aws:iam::702990705182:role/ecsTaskExecutionRole", 
+        "volumes": [
+            {
+                "host": {
+                    "sourcePath": "/home/ec2-user/mysql/conf"
+                }, 
+                "name": "mysql_conf"
+            }, 
+            {
+                "host": {
+                    "sourcePath": "/home/ec2-user/mysql/data"
+                }, 
+                "name": "mysql_data"
+            }
+        ], 
+        "requiresCompatibilities": [
+            "EC2"
+        ], 
+        "taskRoleArn": "arn:aws:iam::702990705182:role/ecsTaskExecutionRole", 
+        "containerDefinitions": [
+            {
+                "environment": [
+                    {
+                        "name": "MYSQL_ROOT_HOST", 
+                        "value": "localhost"
+                    }, 
+                    {
+                        "name": "MYSQL_DATABASE", 
+                        "value": "test"
+                    }, 
+                    {
+                        "name": "MYSQL_ROOT_PASSWORD", 
+                        "value": "test"
+                    }, 
+                    {
+                        "name": "DB_PASSWORD", 
+                        "value": "test"
+                    }
+                ], 
+                "name": "mysql", 
+                "mountPoints": [
+                    {
+                        "sourceVolume": "mysql_conf", 
+                        "containerPath": "/docker-entrypoint-initdb.d"
+                    }, 
+                    {
+                        "sourceVolume": "mysql_data", 
+                        "containerPath": "/var/lib/mysql"
+                    }
+                ], 
+                "image": "702990705182.dkr.ecr.us-east-1.amazonaws.com/alexkonkin/mysql:5.7.8", 
+                "cpu": 0, 
+                "portMappings": [
+                    {
+                        "protocol": "tcp", 
+                        "containerPort": 3306, 
+                        "hostPort": 3306
+                    }
+                ], 
+                "logConfiguration": {
+                    "logDriver": "awslogs", 
+                    "options": {
+                        "awslogs-region": "us-east-1", 
+                        "awslogs-stream-prefix": "ecs", 
+                        "awslogs-group": "/ecs/db"
+                    }
+                }, 
+                "essential": true, 
+                "volumesFrom": []
+            }
+        ] 
+}
