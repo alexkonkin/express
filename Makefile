@@ -179,12 +179,33 @@ bld_push: login
 	fi
 	@ make logout
 
+aws_create_task:
+	${STAGE} "Creating a new revision of the app-express task"
+	@ . ./.env;                                                                                                                     \
+	sed -i 's/TAG/'$$TAG'/g' ./conf/app-express-tmpl.json;                                                                          \
+	rev=$$(aws ecs register-task-definition --cli-input-json file://conf/app-express-tmpl.json | grep revision | awk '{print $$2}');\
+	echo "New task id is : "$$rev;                                                                                                  \
+	res=$$(cat ./tmpfile | grep TASK_REV|wc -l) &&                                                                                  \
+	if [ $$res -ne 0 ];                                                                                                             \
+	then echo 'found';r=$$(cat ./tmpfile | grep TASK_REV | awk -F= '{print $$2}');                                                  \
+	sed -i 's/TASK_REV='$$r'/TASK_REV='$$rev'/g' ./tmpfile;                                                                         \
+	else echo 'else';echo 'TASK_REV='$$rev >> ./tmpfile;                                                                            \
+	fi
+
+aws_update_service:
+	${STAGE} "Updating service app-express with a new revision of the task"
+	@ . ./tmpfile;                                                                                                                          \
+	. ./.env;                                                                                                                               \
+	echo 'Updating app-express service to the task with revision : '$$TASK_REV;                                                             \
+	echo 'Docker tag is :'$$TAG;                                                                                                            \
+	aws ecs update-service --service app-express-external-repo --task-definition app-express-external-repo:$$TASK_REV --cluster production;
+
 login:
 	${INFO} "Logging in to Docker registry ..."
 	@ docker login -u ${USER_CREDENTIALS_USR} -p ${USER_CREDENTIALS_PSW} 2>/dev/null; \
-	if [  $$? -eq 0 ];                                                                    \
-	then echo 'Logged in to Docker registry'; exit 0;                                     \
-	else echo 'Error during login to Docker registry'; exit 1;                            \
+	if [  $$? -eq 0 ];                                                                \
+	then echo 'Logged in to Docker registry'; exit 0;                                 \
+	else echo 'Error during login to Docker registry'; exit 1;                        \
 	fi
 
 logout:
