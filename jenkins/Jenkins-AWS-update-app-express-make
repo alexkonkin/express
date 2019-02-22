@@ -1,0 +1,32 @@
+pipeline {
+    
+    agent { node { label "master" }}
+        
+    parameters {
+        string(
+            name: 'tag',
+            defaultValue:"1",
+            description: "docker tag that should be used for this job")
+    }
+
+    stages {
+        stage('Downloading project from Git'){
+            steps {
+                git 'https://github.com/alexkonkin/express.git'
+            }
+        }
+        
+        stage('AWS: register a new task definition') {
+            steps{
+                sh "make aws_create_task"
+            }
+        }
+        
+        stage('AWS: updating app-express service') {
+            steps{
+                sh "make aws_update_service"
+            }
+        }
+        
+    }
+}
