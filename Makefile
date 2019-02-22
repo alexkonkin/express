@@ -181,14 +181,14 @@ bld_push: login
 
 aws_create_task:
 	${STAGE} "Creating a new revision of the app-express task"
-	@ sed -i 's/TAG/'${tag}'/g' ./conf/app-express-tmpl.json;                                                                          \
+	@ sed -i 's/TAG/'${tag}'/g' ./conf/app-express-tmpl.json;                                                                       \
 	rev=$$(aws ecs register-task-definition --cli-input-json file://conf/app-express-tmpl.json | grep revision | awk '{print $$2}');\
 	echo "New task id is : "$$rev;                                                                                                  \
 	res=$$(cat ./tmpfile | grep TASK_REV|wc -l) &&                                                                                  \
 	if [ $$res -ne 0 ];                                                                                                             \
-	then echo 'found';r=$$(cat ./tmpfile | grep TASK_REV | awk -F= '{print $$2}');                                                  \
+	then r=$$(cat ./tmpfile | grep TASK_REV | awk -F= '{print $$2}');                                                               \
 	sed -i 's/TASK_REV='$$r'/TASK_REV='$$rev'/g' ./tmpfile;                                                                         \
-	else echo 'else';echo 'TASK_REV='$$rev >> ./tmpfile;                                                                            \
+	else echo 'TASK_REV='$$rev >> ./tmpfile;                                                                                        \
 	fi
 
 aws_update_service:
