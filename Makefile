@@ -181,8 +181,7 @@ bld_push: login
 
 aws_create_task:
 	${STAGE} "Creating a new revision of the app-express task"
-	@ . ./.env;                                                                                                                     \
-	sed -i 's/TAG/'$$TAG'/g' ./conf/app-express-tmpl.json;                                                                          \
+	@ sed -i 's/TAG/'${tag}'/g' ./conf/app-express-tmpl.json;                                                                          \
 	rev=$$(aws ecs register-task-definition --cli-input-json file://conf/app-express-tmpl.json | grep revision | awk '{print $$2}');\
 	echo "New task id is : "$$rev;                                                                                                  \
 	res=$$(cat ./tmpfile | grep TASK_REV|wc -l) &&                                                                                  \
@@ -195,9 +194,8 @@ aws_create_task:
 aws_update_service:
 	${STAGE} "Updating service app-express with a new revision of the task"
 	@ . ./tmpfile;                                                                                                                          \
-	. ./.env;                                                                                                                               \
 	echo 'Updating app-express service to the task with revision : '$$TASK_REV;                                                             \
-	echo 'Docker tag is :'$$TAG;                                                                                                            \
+	echo 'Docker tag is :'${tag};                                                                                                            \
 	aws ecs update-service --service app-express-external-repo --task-definition app-express-external-repo:$$TASK_REV --cluster production;
 
 login:
