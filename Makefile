@@ -196,7 +196,7 @@ aws_update_service:
 	@ . ./tmpfile;                                                                                                                          \
 	echo 'Updating app-express service to the task with revision : '$$TASK_REV;                                                             \
 	echo 'Docker tag is :'${tag};                                                                                                            \
-	aws ecs update-service --service app-express-external-repo --task-definition app-express-external-repo:$$TASK_REV --cluster production;
+	aws ecs update-service --service service-app-express --task-definition app-express-external-repo:$$TASK_REV --cluster production;
 
 login:
 	${INFO} "Logging in to Docker registry ..."
