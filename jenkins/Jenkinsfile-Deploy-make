@@ -60,7 +60,7 @@ pipeline {
             steps {
                 script {
                     def tag = sh(script: 'cat ./.env|grep TAG|awk -F= \'{print \$2}\'', returnStdout: true).trim();
-                    build(job: 'aws-update-express-app', 
+                    build(job: 'Deploy-AWS-express-app', 
                         parameters: [
                             string(name: 'tag', value: tag)
                     ])
