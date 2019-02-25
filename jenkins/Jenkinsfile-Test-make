@@ -8,7 +8,7 @@ pipeline {
     parameters {
         string(
             name: 'downstream_job_name',
-            defaultValue:"Deploy-jenkinsfile-make",
+            defaultValue:"Deploy-express-app",
             description: "the name of the downstream job that should deploy the solution")
         string(
             name: 'builder_node_name',
