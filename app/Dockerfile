@@ -6,6 +6,8 @@ ENV DB_USER=${DB_USER} \
     
 WORKDIR /opt/express
 
+COPY test_mysql.sh /usr/bin/test_mysql.sh
+
 RUN apk --update add git npm &&\
     git clone https://github.com/alexkonkin/nodejs-mysql-crud.git .
 
