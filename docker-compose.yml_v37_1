@@ -27,8 +27,6 @@ services:
      depends_on:
        - db
      command: ["/usr/bin/test_mysql.sh","${DB_USER}","${DB_PASSWORD}","/usr/bin/node ./app.js"]
-#       db:
-#         condition: service_healthy
 
    db:
      image: mysql:5.7.8
@@ -42,11 +40,6 @@ services:
         MYSQL_DATABASE: ${DB_NAME}
         MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
         DB_PASSWORD: ${DB_PASSWORD}
-#     healthcheck:
-#       test: "/usr/bin/mysql -u root -h db --password=${DB_PASSWORD} -e \"use test; select count(*) from users;\""
-#       interval: 5s
-#       timeout: 5s
-#       retries: 5
 
 
 
