@@ -3,10 +3,13 @@ FROM alpine:latest as app
 ENV DB_USER=${DB_USER} \
     DB_PASSWORD=${DB_PASSWORD} \
     DB_NAME=${DB_NAME}
-    
+
 WORKDIR /opt/express
 
-RUN apk --update add git npm &&\
+COPY test_mysql.sh /usr/bin/test_mysql.sh
+
+RUN apk --update add git npm mysql-client &&\
+    chmod a+x /usr/bin/test_mysql.sh &&\
     git clone https://github.com/alexkonkin/nodejs-mysql-crud.git .
 
 CMD ["node","./app.js"]
