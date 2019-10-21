@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+   ngnx:
+     image: alexkonkin/nginx:latest
+     restart: always
+     build:
+       context: ./nginx
+       dockerfile: Dockerfile
+     ports:
+       - ${IP_EXT}:80:80
+     environment:
+       IP_EXT: ${IP_EXT}
+     depends_on:
+       - app
+
+   app:
+     image: "alexkonkin/app:${TAG}"
+     restart: always
+     build:
+       context: ./app
+       dockerfile: Dockerfile
+     environment:
+       DB_USER: ${DB_USER}
+       DB_NAME: ${DB_NAME}
+       DB_PASSWORD: ${DB_PASSWORD}
+     depends_on:
+       - db
+     command: ["/usr/bin/test_mysql.sh","${DB_USER}","${DB_PASSWORD}","/usr/bin/node ./app.js"]
+#       db:
+#         condition: service_healthy
+
+   db:
+     image: mysql:5.7.8
+     restart: always
+     ports:
+       - ${IP_INT}:3306:3306 # change ip if required
+     volumes:
+     - ./mysql/conf:/docker-entrypoint-initdb.d
+     - ./mysql/data:/var/lib/mysql
+     environment:
+        MYSQL_DATABASE: ${DB_NAME}
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        DB_PASSWORD: ${DB_PASSWORD}
+#     healthcheck:
+#       test: "/usr/bin/mysql -u root -h db --password=${DB_PASSWORD} -e \"use test; select count(*) from users;\""
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+
+
+
+
+
